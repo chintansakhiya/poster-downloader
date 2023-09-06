@@ -1,4 +1,4 @@
-package main
+package poster_downloader
 
 import (
 	"encoding/json"
