@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -16,40 +15,23 @@ type getData struct {
 	TotalResults int       `json:"total_results"`
 }
 
-type getMovieName struct {
-	Results []getPath `json:"data"`
-}
-
 type getPath struct {
 	OriginalTitle string `json:"original_title"`
 	Path          string `json:"poster_path"`
 }
+ 
+func Downloader(titles []string) {
 
-func main() {
+	for i := 0; i < len(titles); i++ {
 
-	movieTitle, err := http.Get(`http://192.168.1.7:3000/api/v1/movies?limit=44932`)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	defer movieTitle.Body.Close()
-	title, _ := ioutil.ReadAll(movieTitle.Body)
-
-	var titleStr getMovieName
-	json.Unmarshal(title, &titleStr)
-	//----------------------------------------------------------------
-	for i := 0; i < len(titleStr.Results); i++ {
-		titleForPath := strings.Trim(titleStr.Results[i].OriginalTitle, " ")
-		titleForPath = strings.ReplaceAll(titleForPath, " ", "%20")
-		pathString := `https://api.themoviedb.org/3/search/movie?api_key=15d2ea6d0dc1d476efbca3eba2b9bbfb&query=` + titleForPath
-
+		pathString := `https://api.themoviedb.org/3/search/movie?api_key=15d2ea6d0dc1d476efbca3eba2b9bbfb&query=` + titles[i]
 		res, err := http.Get(pathString)
 		if err != nil {
 			fmt.Println(err)
 		}
 
 		defer res.Body.Close()
-		posterPath, _ := ioutil.ReadAll(res.Body)
+		posterPath, _ := io.ReadAll(res.Body)
 
 		var data getData
 		json.Unmarshal(posterPath, &data)
@@ -57,10 +39,12 @@ func main() {
 		if data.TotalResults != 0 {
 
 			fileNamae := strings.ReplaceAll(data.Results[0].Path, "/", "")
-			downloadFile(data.Results[0].Path, fileNamae)
+			err:=downloadFile(data.Results[0].Path, fileNamae)
+			if err!=nil {
+				fmt.Println(err)
+			}
 		} else {
-			fmt.Println(titleForPath)
-
+			fmt.Println(titles[i] + " not found")
 		}
 
 	}
